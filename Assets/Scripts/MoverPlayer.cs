@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 
 public class MoverPlayer : MonoBehaviour
 {
+    
 
     [Header("Inputs")]
     public InputActionReference moveAction; // C'est le vector2 avec Z/Q/S/D
