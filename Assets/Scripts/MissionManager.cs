@@ -5,29 +5,48 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
 using UnityEngine.Audio;
+using System.Security.Cryptography;
+using UnityEditor.VersionControl;
 
 
 public class MissionManager : MonoBehaviour
 {
 
+    public List<GameObject> _Colis = new List<GameObject>();
     public List<GameObject> _Locations = new List<GameObject>();
     public Dictionary<int, GameObject> _waitingLocations = new Dictionary<int, GameObject>();
 
     public GameObject goPlayer;
 
     private GameObject goCurrentLocation;
+    public GameObject goCurrentColis  = null;
 
     public float timeByDistance = 0;
     public InputActionReference missionActionRef;
 
     public float missionTimer = 0f;
+    public float missionTotalTimer = 0f;
+
 
     bool isSearching = false;
 
     int nbMission = 0;
     public int limitRepetition = 3;
 
+    public AnimationCurve curveColis;
 
+    public float scoreTotal = 0;
+
+    // test
+    public InputActionReference changeActionRef;
+    // fin test
+
+
+    public GameObject goScore;
+    public GameObject goTime;
+
+    private TMPro.TextMeshProUGUI _tScore;
+    private TMPro.TextMeshProUGUI _tTime;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -35,13 +54,22 @@ public class MissionManager : MonoBehaviour
     {
         missionActionRef.action.performed += CreateMission;
         missionActionRef.action.Enable();
+        updateColisList(null);
+        // test 
+        changeActionRef.action.performed += Degat;
+        changeActionRef.action.Enable();
+        // fin test
+        _tScore = goScore.GetComponent<TMPro.TextMeshProUGUI>();
+        _tTime = goTime.GetComponent<TMPro.TextMeshProUGUI>();
+
     }
 
     private void OnDestroy()
     {
-        //debranche
         missionActionRef.action.performed -= CreateMission;
-
+        //test
+        changeActionRef.action.performed -= Degat;
+        //fin test
     }
 
     // Update is called once per frame
@@ -50,8 +78,12 @@ public class MissionManager : MonoBehaviour
         if (isSearching)
         {
             missionTimer -= Time.deltaTime;
-            Debug.Log(missionTimer);
-            if (missionTimer <= 0f) isSearching = false;
+            _tTime.text = (missionTimer.ToString("F2")) + " s";
+            //Debug.Log(missionTimer);
+            if (missionTimer <= 0f)
+            {
+                endMission(null, null);
+            }
         }
     }
 
@@ -60,24 +92,19 @@ public class MissionManager : MonoBehaviour
 
     public void CreateMission(InputAction.CallbackContext callbackContext)
     {
-        Debug.Log("nique ta mere");
-        if (_Locations.Count == 0) return;
+        if (_Locations.Count == 0 || isSearching || _Colis.Count == 0) return;
         else
         {
-            Renderer tRenderer;
-            if (goCurrentLocation != null) {
-                 tRenderer = goCurrentLocation.GetComponent<Renderer>();
-
-                // Use SetColor to set the main color shader property
-                tRenderer.material.SetColor("_BaseColor", Color.white);
-            }
             int rand = Random.Range(0, _Locations.Count);
             goCurrentLocation = _Locations[rand];
             float distance = Vector3.Distance(goPlayer.transform.position, goCurrentLocation.transform.position);
-            Debug.Log(distance);
+            // gestion du timer
             missionTimer = distance * timeByDistance;
+            missionTotalTimer = missionTimer;
+
             isSearching = true;
-            Debug.Log("---------------------------------------");
+            getNewColis();
+            // gestion des locations
             _waitingLocations.Add(nbMission+limitRepetition, goCurrentLocation);
             _Locations.Remove(goCurrentLocation);
             if (nbMission >= limitRepetition)
@@ -85,29 +112,85 @@ public class MissionManager : MonoBehaviour
                 _Locations.Add(_waitingLocations[nbMission]);
                 _waitingLocations.Remove(nbMission);
             }
-
-            // pour phase de test
-
-            tRenderer = goCurrentLocation.GetComponent<Renderer>();
-
-            // Use SetColor to set the main color shader property
-            tRenderer.material.SetColor("_BaseColor", Color.red);
-
+            // test
+            goCurrentLocation.transform.localScale *= 1.5f;
+            // fin test
             nbMission++;
-
         }
     }
 
 
-    public void endMission()
+    public void endMission(GameObject colis, GameObject loc)
     {
-        isSearching = false;
-        Debug.Log("nique ta mere");
-  
-        
+        if ((isSearching) && (colis == goCurrentColis) && (loc == goCurrentLocation))
+        {
+            isSearching = false;
+            // multiplicateur de l'etat du colis
+            float ratio = (float)(goCurrentColis.GetComponent<ColisManager>().Index) / (float)(goCurrentColis.GetComponent<ColisManager>().getMax());
+            // base de score par rapport a la durée
+            float score;
+            float pourcent = (missionTimer / missionTotalTimer) * 100;
+            if (pourcent > 70) score = 1000;
+            else if (pourcent > 30) score = 650;
+            else if (pourcent > 0.1) score = 350;
+            else score = 0;
+            // calcule le score
+            score *= curveColis.Evaluate(ratio);           
+            scoreTotal += score;
+            _tScore.text = scoreTotal.ToString("F0");
+            // retire le colis
+            _Colis.Remove(goCurrentColis);
+            Destroy(goCurrentColis);
+            goCurrentColis = null;
+            goCurrentLocation.transform.localScale /= 2f;
+            _tTime.text = "";
+
+
+        }
+        else if ((isSearching) && colis == null)
+        {
+            isSearching = false;
+            goCurrentColis = null;
+            goCurrentLocation.transform.localScale /= 2f;
+            _tTime.text = "";
+
+        }
+    }
+
+    public void updateColisList(GameObject colis)
+    {
+        if( colis != null)
+        {
+            if (colis == goCurrentColis) { endMission(null, null); }
+            _Colis.Remove(colis);
+            Destroy(colis);
+        }
+        StartCoroutine(UpdateColisListCoroutine());
+
+    }
+
+    private IEnumerator UpdateColisListCoroutine()
+    {
+        yield return null; // Attend la fin de la frame
+
+        _Colis = new List<GameObject>(GameObject.FindGameObjectsWithTag("Colis"));
+    }
+    public void getNewColis()
+    {
+         int rand = Random.Range(0, _Colis.Count);
+         goCurrentColis = _Colis[rand];
     }
 
 
+    //test degat
+    public void Degat(InputAction.CallbackContext callbackContext)
+    {
+        if (goCurrentColis != null)
+        {
+            goCurrentColis.GetComponent<ColisManager>().Degat(10);
+        }
+    }
+    //fin test
 
 
 }

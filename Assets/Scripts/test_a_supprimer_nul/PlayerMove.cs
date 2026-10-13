@@ -1,23 +1,136 @@
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerMove : MonoBehaviour
 {
+    
+    public GameObject _PrefabColis;
+
     public float speed = 5f;
+    public float sensitivity = 0.1f;
+    public Transform cam;
 
-    private InputAction moveAction;
+    public InputActionReference moveAction;
+    public InputActionReference lookAction;
+    private GameObject colis;
+    CharacterController controller;
+    float rotationX;
+    public float pickupDistance = 3f;
 
-    void Awake()
+
+    // test
+    public InputActionReference takeActionRef;
+    public GameObject goLife;
+    private TMPro.TextMeshProUGUI _tLife;
+    // fin test
+
+    
+
+
+    void Start()
     {
-        moveAction = InputSystem.actions.FindAction("Player/Move");
+        controller = GetComponent<CharacterController>();
+        Cursor.lockState = CursorLockMode.Locked;
+        //test
+        _tLife = goLife.GetComponent<TMPro.TextMeshProUGUI>();
+        //fin test
+
+    }
+
+    void OnEnable()
+    {
+        moveAction.action.Enable();
+        lookAction.action.Enable();
+
+        // test 
+        takeActionRef.action.performed += ActionColis;
+        takeActionRef.action.Enable();
+        // fin test
+    }
+
+    void OnDisable()
+    {
+        moveAction.action.Disable();
+        lookAction.action.Disable();
+        //test
+        takeActionRef.action.performed -= ActionColis;
+        //fin test
     }
 
     void Update()
     {
-        Vector2 input = moveAction.ReadValue<Vector2>();
+        // Déplacement
+        Vector2 move = moveAction.action.ReadValue<Vector2>();
+        Vector3 direction = transform.right * move.x + transform.forward * move.y;
 
-        Vector3 direction = new Vector3(-input.x, 0f, input.y);
+        controller.Move(direction * speed * Time.deltaTime);
 
-        transform.Translate(direction * speed * Time.deltaTime, Space.World);
+        // Caméra FPS
+        Vector2 look = lookAction.action.ReadValue<Vector2>() * sensitivity;
+
+        rotationX -= look.y;
+        rotationX = Mathf.Clamp(rotationX, -90f, 90f);
+
+        cam.localRotation = Quaternion.Euler(rotationX, 0, 0);
+        transform.Rotate(Vector3.up * look.x);
+
+        //test
+        if (colis != null) _tLife.text = "vie du colis : "+(colis.GetComponent<ColisManager>().Life).ToString()+" %";
+        //fin test
     }
+
+
+
+    //**************** gestion des colis *****************
+
+    public void ActionColis(InputAction.CallbackContext callbackContext)
+    {
+        if (colis != null) Drop();
+        else PickUp();
+    }
+
+    void PickUp()
+    {
+        if (Physics.Raycast(cam.position, cam.forward, out RaycastHit hit, pickupDistance))
+        {
+            if (hit.collider.CompareTag("Colis"))
+            {
+                Rigidbody rb = hit.collider.GetComponentInParent<Rigidbody>();
+
+                if (rb != null)
+                {
+                    colis = rb.gameObject;
+
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
+
+                    colis.transform.SetParent(cam);
+                    colis.transform.localPosition = new Vector3(0.5f, -0.3f, 1f);
+                    colis.transform.localRotation = Quaternion.identity;
+                    //test
+                    goLife.SetActive(true);
+                    //fin test
+                }
+            }
+                
+        }
+    }
+    void Drop()
+    {
+        colis.transform.SetParent(null);
+
+        Rigidbody rb = colis.GetComponent<Rigidbody>();
+        rb.isKinematic = false;
+        rb.useGravity = true;
+
+        rb.AddForce(((cam.forward + Vector3.up * 0.3f).normalized) * 5f, ForceMode.Impulse);
+        //test
+        goLife.SetActive(false);
+        //fin test
+        colis = null;
+    }
+
+    public GameObject getColis(){ return colis; }
+
 }
