@@ -101,6 +101,7 @@ MeshRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 413aeb0ecb047a445b74f9a7b9b0c613, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -136,6 +137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b519f1f1a80d3640a1626bb46a7f253, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::locat
+  outline: {fileID: 0}
 --- !u!65 &8033567797086304170
 BoxCollider:
   m_ObjectHideFlags: 0

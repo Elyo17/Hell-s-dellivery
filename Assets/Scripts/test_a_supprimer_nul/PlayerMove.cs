@@ -25,7 +25,9 @@ public class PlayerMove : MonoBehaviour
     private TMPro.TextMeshProUGUI _tLife;
     // fin test
 
-    
+    GameObject colisRegarde;
+    GameObject colisMission;
+
 
 
     void Start()
@@ -35,6 +37,7 @@ public class PlayerMove : MonoBehaviour
         //test
         _tLife = goLife.GetComponent<TMPro.TextMeshProUGUI>();
         //fin test
+
 
     }
 
@@ -60,6 +63,7 @@ public class PlayerMove : MonoBehaviour
 
     void Update()
     {
+        UpdateOutline();
         // Déplacement
         Vector2 move = moveAction.action.ReadValue<Vector2>();
         Vector3 direction = transform.right * move.x + transform.forward * move.y;
@@ -108,6 +112,8 @@ public class PlayerMove : MonoBehaviour
                     colis.transform.SetParent(cam);
                     colis.transform.localPosition = new Vector3(0.5f, -0.3f, 1f);
                     colis.transform.localRotation = Quaternion.identity;
+                    colis.GetComponent<ColisManager>().SetOutline(false, true);
+
                     //test
                     goLife.SetActive(true);
                     //fin test
@@ -125,6 +131,8 @@ public class PlayerMove : MonoBehaviour
         rb.useGravity = true;
 
         rb.AddForce(((cam.forward + Vector3.up * 0.3f).normalized) * 5f, ForceMode.Impulse);
+        colis.GetComponent<ColisManager>().SetOutline(false, false);
+
         //test
         goLife.SetActive(false);
         //fin test
@@ -132,5 +140,53 @@ public class PlayerMove : MonoBehaviour
     }
 
     public GameObject getColis(){ return colis; }
+
+
+
+
+
+
+
+    void UpdateOutline()
+    {
+        if (colis == null) {
+            GameObject nouveauColis = null;
+
+            if (Physics.Raycast(cam.position, cam.forward, out RaycastHit hit, pickupDistance))
+            {
+                if (hit.collider.CompareTag("Colis"))
+                {
+                    ColisManager cm = hit.collider.GetComponent<ColisManager>();
+
+                    if (cm != null)
+                        nouveauColis = hit.collider.gameObject;
+                }
+            }
+
+            if (nouveauColis == colisRegarde)
+                return;
+
+            if (colisRegarde != null)
+                colisRegarde.GetComponent<ColisManager>().SetOutline(false, false);
+
+            colisRegarde = nouveauColis;
+
+            if (colisRegarde != null)
+                colisRegarde.GetComponent<ColisManager>().SetOutline(true, false);
+        }
+    }
+
+    public void enterCar() 
+    { 
+        if (colisMission != null) colisMission.GetComponent<ColisManager>().SetOutline(false, true);
+    }
+
+    public void exitCar()
+    {
+        if (colisMission != null) colisMission.GetComponent<ColisManager>().SetOutline(false, false);
+    }
+
+    public void setColisMission(GameObject c){ colisMission = c; }
+
 
 }

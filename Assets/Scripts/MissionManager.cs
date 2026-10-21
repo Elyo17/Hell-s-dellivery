@@ -113,7 +113,7 @@ public class MissionManager : MonoBehaviour
                 _waitingLocations.Remove(nbMission);
             }
             // test
-            goCurrentLocation.transform.localScale *= 1.5f;
+            goCurrentLocation.GetComponentInChildren<locat>().SetOutline(true);
             // fin test
             nbMission++;
         }
@@ -124,6 +124,7 @@ public class MissionManager : MonoBehaviour
     {
         if ((isSearching) && (colis == goCurrentColis) && (loc == goCurrentLocation))
         {
+            Debug.Log("ok");
             isSearching = false;
             // multiplicateur de l'etat du colis
             float ratio = (float)(goCurrentColis.GetComponent<ColisManager>().Index) / (float)(goCurrentColis.GetComponent<ColisManager>().getMax());
@@ -140,9 +141,10 @@ public class MissionManager : MonoBehaviour
             _tScore.text = scoreTotal.ToString("F0");
             // retire le colis
             _Colis.Remove(goCurrentColis);
+            goCurrentColis.GetComponent<ColisManager>().MissionOutline(false);
             Destroy(goCurrentColis);
             goCurrentColis = null;
-            goCurrentLocation.transform.localScale /= 2f;
+            goCurrentLocation.GetComponentInChildren<locat>().SetOutline(false);
             _tTime.text = "";
 
 
@@ -150,8 +152,9 @@ public class MissionManager : MonoBehaviour
         else if ((isSearching) && colis == null)
         {
             isSearching = false;
+            goCurrentColis.GetComponent<ColisManager>().MissionOutline(false);
             goCurrentColis = null;
-            goCurrentLocation.transform.localScale /= 2f;
+            goCurrentLocation.GetComponentInChildren<locat>().SetOutline(false);
             _tTime.text = "";
 
         }
@@ -179,6 +182,9 @@ public class MissionManager : MonoBehaviour
     {
          int rand = Random.Range(0, _Colis.Count);
          goCurrentColis = _Colis[rand];
+         goCurrentColis.GetComponent<ColisManager>().MissionOutline(true);
+         goPlayer.GetComponent<PlayerMove>().setColisMission(_Colis[rand]);
+
     }
 
 
