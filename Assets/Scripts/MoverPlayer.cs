@@ -7,29 +7,41 @@ public class MoverPlayer : MonoBehaviour
     [Header("Inputs")]
     public InputActionReference moveAction; // C'est le vector2 avec Z/Q/S/D
     public InputActionReference lookAction;// Ceci est le vector2 avec le Mouse Delta
+    public InputActionReference jumpAction;// Button : Espace / A
+    public InputActionReference sprintAction;// Button : Shift / clic stick gauche
 
     [Header("Références")]
     [SerializeField] private Transform cameraTransform;// Pour la caméra enfant
 
     [Header("Réglages")]
     [SerializeField] private float speed = 3.0f;
+    [SerializeField] private float sprintMultiplier = 1.8f;
     [SerializeField] private float mouseSensitivity = 0.1f;
     [SerializeField] private float maxLookAngle = 85f;
 
+    [Header("Saut / Gravité")]
+    [SerializeField] private float jumpHeight = 1.2f;
+    [SerializeField] private float gravity = -20f;
+
     private CharacterController characterController;
     private float cameraPitch = 0f; //angle vertical de la caméra
+    private float verticalVelocity = 0f;
 
 
     void OnEnable()
     {
         moveAction.action.Enable();
         lookAction.action.Enable();
+        jumpAction.action.Enable();
+        sprintAction.action.Enable();
     }
 
     void OnDisable()
     { 
         moveAction.action.Disable();
         lookAction.action.Disable();
+        jumpAction.action.Disable();
+        sprintAction.action.Disable();
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -55,11 +67,28 @@ public class MoverPlayer : MonoBehaviour
 
         // Move character
         Vector3 moveDirection = transform.forward * stickdirection.y + transform.right * stickdirection.x;
+        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
 
-        // Ca évite au personnage de pouvoir aller vite en diagonale
-        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f) * speed;
+        // Sprint : tant que la touche est maintenue
+        float currentSpeed = sprintAction.action.IsPressed() ? speed * sprintMultiplier : speed;
+        Vector3 horizontalVelocity = moveDirection * currentSpeed;
 
-        characterController.SimpleMove(moveDirection);
+        // Gravité + saut
+        if (characterController.isGrounded && verticalVelocity < 0f)
+        {
+            verticalVelocity = -2f; // petite force vers le bas pour rester collé au sol
+        }
+
+        if (jumpAction.action.WasPressedThisFrame() && characterController.isGrounded)
+        {
+            verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
+
+        verticalVelocity += gravity * Time.deltaTime;
+
+        // Mouvement final
+        Vector3 velocity = horizontalVelocity + Vector3.up * verticalVelocity;
+        characterController.Move(velocity * Time.deltaTime);
     }
 
     void Look()

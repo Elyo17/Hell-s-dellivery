@@ -501,6 +501,14 @@ PrefabInstance:
       propertyPath: m_CullingMask.m_Bits
       value: 55
       objectReference: {fileID: 0}
+    - target: {fileID: 6084353095236824472, guid: 2b68bec8cfd735846b025e037d24588d, type: 3}
+      propertyPath: jumpAction
+      value: 
+      objectReference: {fileID: 3206303742589129303, guid: cae95c56ad3197a41927fb11472ad5e5, type: 3}
+    - target: {fileID: 6084353095236824472, guid: 2b68bec8cfd735846b025e037d24588d, type: 3}
+      propertyPath: sprintAction
+      value: 
+      objectReference: {fileID: 2425094176166484305, guid: cae95c56ad3197a41927fb11472ad5e5, type: 3}
     - target: {fileID: 6806994728751326586, guid: 2b68bec8cfd735846b025e037d24588d, type: 3}
       propertyPath: m_Name
       value: __________Players_________
